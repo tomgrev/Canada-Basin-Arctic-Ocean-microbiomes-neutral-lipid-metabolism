@@ -1,0 +1,29 @@
+##### Scripts for binning metagenomic assemblies and co-assemblies into a set of metagenome-assembled genomes #####
+
+#For each metagenomic assembly, run mapping of the reads from the same sample on the assembly using bbmap
+#For co-assemblies, many metagenomic raw reads file can be mapped to the co-assembly
+
+bbmap.sh maxlen=500 ambiguous=best mappedonly=t idtag=t pigz=t minid=0.98 covstats=sample.cov scafstats=sample.scafstats idhist=sample.idhist rpkm=sample.rpkm ref=sample.fasta in=sample.fastq.gz outm=sample.sam
+
+#Transform the .sam files into the required coverage fille needed by metabat
+
+samtools view -S -b sample.sam > sample.bam
+
+samtools sort sample.bam -o sample.sorted.bam
+
+jgi_summarize_bam_contig_depths --outputDepth sample_depth.txt sample.sorted.bam
+
+
+#Run metabat on the assemblies and/or co-assemblies using the coverage file
+
+metabat2 -i sample.fasta -a Cample_depth.txt -o sample -v
+
+
+#Run checkm to check for completeness and contamination of all the generated MAGs
+
+checkm lineage_wf -x fa -f MAGs_checkm_QC.txt MAGs MAGs_QC
+
+
+#Run gtdb-tk to get the taxonomy of all the MAGs
+
+gtdbtk classify_wf —genome_dir MAGs —out_dir MAGS_gtdb -x gz —prefix MAGs —cpus 8
